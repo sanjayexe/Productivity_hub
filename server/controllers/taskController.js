@@ -1,0 +1,247 @@
+const Task = require("../models/Task");
+const User = require("../models/User");
+const OpenAI = require("openai");
+
+// @desc    Get tasks
+// @route   GET /api/tasks
+// @access  Private
+const getTasks = async (req, res) => {
+  const tasks = await Task.find({ user: req.user.id });
+  res.status(200).json(tasks);
+};
+
+// @desc    Set task
+// @route   POST /api/tasks
+// @access  Private
+const setTask = async (req, res) => {
+  if (!req.body.title) {
+    res.status(400).json({ message: "Please add a title" });
+    return;
+  }
+
+  const task = await Task.create({
+    user: req.user.id,
+    title: req.body.title,
+    description: req.body.description,
+    dueDate: req.body.dueDate,
+    status: req.body.status,
+    priority: req.body.priority,
+  });
+
+  // Send email notification instead of N8N sync
+  if (task.dueDate && req.user && req.user.email) {
+    try {
+      const { sendEmail } = require("../services/emailService");
+      const dueDate = new Date(task.dueDate).toLocaleString();
+      const emailText = `Task: ${task.title}\nDescription: ${task.description || "No description"}\nDue Date: ${dueDate}\nStatus: ${task.status || "pending"}\nPriority: ${task.priority || "medium"}\n\nCheck your task list for more details.`;
+
+      const emailHtml = `<div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5; border-radius: 8px;"><h2 style="color: #333;">New Task Created</h2><div style="background: white; padding: 20px; border-radius: 8px; margin-top: 10px;"><p><strong>Task:</strong> ${task.title}</p><p><strong>Description:</strong> ${task.description || "No description"}</p><p><strong>Due Date:</strong> ${dueDate}</p><p><strong>Status:</strong> ${task.status || "pending"}</p><p><strong>Priority:</strong> ${task.priority || "medium"}</p></div><p style="color: #666; margin-top: 15px; font-size: 0.9em;">Please sign in to view the task in the app.</p></div>`;
+
+      await sendEmail(
+        req.user.email,
+        "New Task: " + task.title,
+        emailText,
+        emailHtml,
+      );
+    } catch (error) {
+      console.error("Error sending task notification email:", error.message);
+      // Don't fail the request if email fails
+    }
+  }
+
+  res.status(200).json(task);
+};
+
+// @desc    Update task
+// @route   PUT /api/tasks/:id
+// @access  Private
+const updateTask = async (req, res) => {
+  const task = await Task.findById(req.params.id);
+
+  if (!task) {
+    res.status(400).json({ message: "Task not found" });
+    return;
+  }
+
+  // Check for user
+  if (!req.user) {
+    res.status(401).json({ message: "User not found" });
+    return;
+  }
+
+  // Make sure the logged in user matches the task user
+  if (task.user.toString() !== req.user.id) {
+    res.status(401).json({ message: "User not authorized" });
+    return;
+  }
+
+  const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
+
+  res.status(200).json(updatedTask);
+};
+
+// @desc    Delete task
+// @route   DELETE /api/tasks/:id
+// @access  Private
+const deleteTask = async (req, res) => {
+  const task = await Task.findById(req.params.id);
+
+  if (!task) {
+    res.status(400).json({ message: "Task not found" });
+    return;
+  }
+
+  // Check for user
+  if (!req.user) {
+    res.status(401).json({ message: "User not found" });
+    return;
+  }
+
+  // Make sure the logged in user matches the task user
+  if (task.user.toString() !== req.user.id) {
+    res.status(401).json({ message: "User not authorized" });
+    return;
+  }
+
+  await task.deleteOne();
+
+  res.status(200).json({ id: req.params.id });
+};
+
+// @desc    Smart breakdown task into subtasks using Gemini
+// @route   POST /api/tasks/smart-breakdown
+// @access  Private
+const smartBreakdown = async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!title) {
+      return res.status(400).json({ message: "Please provide a task title" });
+    }
+
+    const openai = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.OPENROUTER_API_KEY,
+    });
+    
+    const prompt = `Break down the following task into 5-10 actionable subtasks.
+Task Title: ${title}
+Task Description: ${description || 'No description provided.'}
+
+Respond ONLY with a valid JSON array of objects, where each object has these exact keys:
+- "title" (string, the subtask name)
+- "duration" (string, estimated time like "15 mins", "1 hour")
+- "priority" (string, strictly one of: "low", "medium", "high")
+
+Do not include any markdown formatting, code blocks, or extra text outside the JSON array. Just the raw JSON.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "openai/gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 1000
+    });
+
+    let responseText = completion.choices[0].message.content;
+    // Clean up potential markdown formatting from the model
+    responseText = responseText.replace(/^```(json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    
+    const subtasks = JSON.parse(responseText);
+    res.status(200).json(subtasks);
+  } catch (error) {
+    console.error('Smart Breakdown Error:', error);
+    res.status(500).json({ message: 'Failed to generate smart breakdown' });
+  }
+};
+
+// @desc    Create task from natural language text
+// @route   POST /api/tasks/nl
+// @access  Private
+const createTaskNL = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ message: "Please provide natural language text" });
+    }
+
+    const openai = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.OPENROUTER_API_KEY,
+    });
+    
+    const now = new Date().toLocaleString();
+    const prompt = `You are an AI task assistant. Parse the following user request and extract the task details.
+User Request: "${text}"
+Current Date and Time: ${now}
+
+Instructions:
+1. Determine a concise "title" for the task.
+2. Determine the "dueDate". Calculate it based on the Current Date and Time and the user's text. Return it as a valid ISO 8601 string. If no time is specified, default to 17:00:00 local time of that day. If no date is specified at all, return null.
+3. Determine the "priority". It MUST be strictly one of: "low", "medium", or "high". Infer from context ("urgent", "top priority" = high). Default to "medium".
+4. Determine the "description". If the user is asking to email someone, follow up, or message someone, Draft an email/message template and include it in the description. Otherwise, summarize any extra details from the prompt. 
+
+Respond ONLY with a valid JSON object with the exact keys:
+- "title" (string)
+- "dueDate" (string or null)
+- "priority" (string)
+- "description" (string)
+
+Do not include any markdown formatting, code blocks, or extra text outside the JSON object. Just the raw JSON.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "openai/gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 1000
+    });
+
+    let responseText = completion.choices[0].message.content;
+    // Clean up potential markdown formatting from the model
+    responseText = responseText.replace(/^```(json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    
+    const parsedData = JSON.parse(responseText);
+    
+    // Create the task using the parsed values
+    const task = await Task.create({
+      user: req.user.id,
+      title: parsedData.title,
+      description: parsedData.description,
+      dueDate: parsedData.dueDate,
+      priority: parsedData.priority || 'medium',
+      status: 'pending',
+    });
+
+    // Send email notification for the new task
+    if (task.dueDate && req.user && req.user.email) {
+      try {
+        const { sendEmail } = require("../services/emailService");
+        const dueDate = new Date(task.dueDate).toLocaleString();
+        const emailText = `Task: ${task.title}\nDescription: ${task.description || "No description"}\nDue Date: ${dueDate}\nStatus: ${task.status}\nPriority: ${task.priority}\n\nCheck your task list for more details.`;
+
+        const emailHtml = `<div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5; border-radius: 8px;"><h2 style="color: #333;">New Task Created via AI</h2><div style="background: white; padding: 20px; border-radius: 8px; margin-top: 10px;"><p><strong>Task:</strong> ${task.title}</p><p><strong>Description:</strong> ${task.description || "No description"}</p><p><strong>Due Date:</strong> ${dueDate}</p><p><strong>Status:</strong> ${task.status}</p><p><strong>Priority:</strong> ${task.priority}</p></div><p style="color: #666; margin-top: 15px; font-size: 0.9em;">Please sign in to view the task in the app.</p></div>`;
+
+        await sendEmail(
+          req.user.email,
+          "New Task: " + task.title,
+          emailText,
+          emailHtml,
+        );
+      } catch (emailError) {
+        console.error("Error sending task notification email:", emailError.message);
+      }
+    }
+
+    res.status(200).json(task);
+  } catch (error) {
+    console.error('Create Task NL Error:', error);
+    res.status(500).json({ message: 'Failed to create task from NLP' });
+  }
+};
+
+module.exports = {
+  getTasks,
+  setTask,
+  updateTask,
+  deleteTask,
+  smartBreakdown,
+  createTaskNL,
+};

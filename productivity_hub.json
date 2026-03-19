@@ -1,0 +1,90 @@
+{
+  "name": "productivity_hub",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "remainder_n8n",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-832, 160],
+      "id": "5344d573-9e5a-4517-9030-2fd124635628",
+      "webhookId": "a4fd6802-aeef-4f85-9313-159030bf6e82"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.email || 'sanjay.jay18v@gmail.com'}}",
+        "subject": "Task Reminder",
+        "message": "={{$json.message || 'No message'}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [-544, 144],
+      "id": "70b1547e-7e65-45c9-9dfa-b8b13157c5d4",
+      "name": "Send a message",
+      "webhookId": "a84f8bf1-502a-41c1-a1d7-81b181e07f01",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2YHfTwEKcjKtrJvE",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [-336, 144],
+      "id": "55d4dd6c-454e-4b2d-8237-063492d7572e",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "vaYocsyUczU2FH33"
+  },
+  "versionId": "e4eb96b8-6154-42b8-b5ef-64dba834bdfb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d1a8d46eb60bd61192ec2bb90ded9a9af9d0bd64a2c29a6a4188c16988660e0e"
+  },
+  "id": "vaYocsyUczU2FH33",
+  "tags": []
+}
