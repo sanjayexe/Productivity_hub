@@ -4,6 +4,10 @@ import AuthContext from "../context/AuthContext";
 import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -94,7 +98,7 @@ const Register = () => {
       setResendLoading(true);
       setError("");
       const response = await axios.post(
-        "http://localhost:5000/api/users/resend-otp",
+        `${API_BASE_URL}/api/users/resend-otp`,
         {
           email,
         },

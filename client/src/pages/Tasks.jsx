@@ -2,6 +2,10 @@ import { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import AuthContext from "../context/AuthContext";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
@@ -19,10 +23,7 @@ const Tasks = () => {
       const config = {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       };
-      const { data } = await axios.get(
-        "http://localhost:5000/api/tasks",
-        config,
-      );
+      const { data } = await axios.get(`${API_BASE_URL}/api/tasks`, config);
       setTasks(data);
     } catch (error) {
       console.error(error);
@@ -35,26 +36,26 @@ const Tasks = () => {
 
   const generateBreakdown = async () => {
     if (!title) {
-        alert("Please enter a Title to generate a smart breakdown.");
-        return;
+      alert("Please enter a Title to generate a smart breakdown.");
+      return;
     }
     setIsGenerating(true);
     try {
-        const config = {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        };
-        const { data } = await axios.post(
-            "http://localhost:5000/api/tasks/smart-breakdown",
-            { title, description },
-            config
-        );
-        // Default to selected
-        setSubtasks(data.map(st => ({ ...st, selected: true })));
+      const config = {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      };
+      const { data } = await axios.post(
+        `${API_BASE_URL}/api/tasks/smart-breakdown`,
+        { title, description },
+        config,
+      );
+      // Default to selected
+      setSubtasks(data.map((st) => ({ ...st, selected: true })));
     } catch (error) {
-        console.error("Smart breakdown failed", error);
-        alert("Failed to generate smart breakdown. Please try again.");
+      console.error("Smart breakdown failed", error);
+      alert("Failed to generate smart breakdown. Please try again.");
     } finally {
-        setIsGenerating(false);
+      setIsGenerating(false);
     }
   };
 
@@ -72,23 +73,35 @@ const Tasks = () => {
       const config = {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       };
-      
+
       const { data: newTask } = await axios.post(
-        "http://localhost:5000/api/tasks",
-        { title, description, priority, dueDate: dueDateISO, status: "pending" },
+        `${API_BASE_URL}/api/tasks`,
+        {
+          title,
+          description,
+          priority,
+          dueDate: dueDateISO,
+          status: "pending",
+        },
         config,
       );
-      
+
       let newTasks = [newTask];
-      
-      const selectedSubtasks = subtasks.filter(st => st.selected);
+
+      const selectedSubtasks = subtasks.filter((st) => st.selected);
       for (const st of selectedSubtasks) {
-          const { data: subTaskData } = await axios.post(
-            "http://localhost:5000/api/tasks",
-            { title: st.title, description: `Dependency of: ${title}. Est. Duration: ${st.duration}`, priority: st.priority, dueDate: dueDateISO, status: "pending" },
-            config,
-          );
-          newTasks.push(subTaskData);
+        const { data: subTaskData } = await axios.post(
+          `${API_BASE_URL}/api/tasks`,
+          {
+            title: st.title,
+            description: `Dependency of: ${title}. Est. Duration: ${st.duration}`,
+            priority: st.priority,
+            dueDate: dueDateISO,
+            status: "pending",
+          },
+          config,
+        );
+        newTasks.push(subTaskData);
       }
 
       setTasks((prev) => [...newTasks, ...prev]);
@@ -110,9 +123,9 @@ const Tasks = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       };
       const { data: newTask } = await axios.post(
-        "http://localhost:5000/api/tasks/nl",
+        `${API_BASE_URL}/api/tasks/nl`,
         { text: nlInput },
-        config
+        config,
       );
       setTasks((prev) => [newTask, ...prev]);
       setNlInput("");
@@ -134,7 +147,7 @@ const Tasks = () => {
         prev.map((t) => (t._id === id ? { ...t, status: newStatus } : t)),
       );
       await axios.put(
-        `http://localhost:5000/api/tasks/${id}`,
+        `${API_BASE_URL}/api/tasks/${id}`,
         { status: newStatus },
         config,
       );
@@ -167,9 +180,19 @@ const Tasks = () => {
       <div
         style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "2rem" }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+        >
           {/* Quick Add with AI Card */}
-          <div className="card" style={{ height: "fit-content", border: "1px solid var(--primary-color)", background: "linear-gradient(135deg, var(--card-bg), rgba(99, 102, 241, 0.05))" }}>
+          <div
+            className="card"
+            style={{
+              height: "fit-content",
+              border: "1px solid var(--primary-color)",
+              background:
+                "linear-gradient(135deg, var(--card-bg), rgba(99, 102, 241, 0.05))",
+            }}
+          >
             <h3>✨ Quick Add with AI</h3>
             <form onSubmit={addNLTask}>
               <div style={{ marginBottom: "1rem" }}>
@@ -177,7 +200,16 @@ const Tasks = () => {
                   value={nlInput}
                   onChange={(e) => setNlInput(e.target.value)}
                   placeholder="e.g. Remind me to follow up with John next Tuesday, it's high priority"
-                  style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)", resize: "vertical", minHeight: "80px" }}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--border-color)",
+                    background: "var(--bg-secondary)",
+                    color: "var(--text-primary)",
+                    resize: "vertical",
+                    minHeight: "80px",
+                  }}
                   required
                 />
               </div>
@@ -195,86 +227,127 @@ const Tasks = () => {
           {/* Add Task Form */}
           <div className="card" style={{ height: "fit-content" }}>
             <h3>Add New Task</h3>
-          <form onSubmit={addTask}>
-            <div style={{ marginBottom: "1rem" }}>
-              <label>Title</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="What needs to be done?"
-                required
-              />
-            </div>
-            <div style={{ marginBottom: "1rem" }}>
-              <label>Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Details help the AI generate a better breakdown..."
-                style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)", resize: "vertical", minHeight: "80px" }}
-              />
-            </div>
-            <div style={{ marginBottom: "1rem" }}>
-              <label>Due Time (Today)</label>
-              <input
-                type="time"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label>Priority</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
+            <form onSubmit={addTask}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label>Title</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="What needs to be done?"
+                  required
+                />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label>Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Details help the AI generate a better breakdown..."
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--border-color)",
+                    background: "var(--bg-secondary)",
+                    color: "var(--text-primary)",
+                    resize: "vertical",
+                    minHeight: "80px",
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label>Due Time (Today)</label>
+                <input
+                  type="time"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </div>
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label>Priority</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
               <button
                 type="button"
                 onClick={generateBreakdown}
                 disabled={isGenerating}
                 className="btn-secondary"
-                style={{ width: "100%", marginBottom: "1rem", background: "transparent", border: "1px solid var(--primary-color)", color: "var(--primary-color)" }}
+                style={{
+                  width: "100%",
+                  marginBottom: "1rem",
+                  background: "transparent",
+                  border: "1px solid var(--primary-color)",
+                  color: "var(--primary-color)",
+                }}
               >
                 {isGenerating ? "Analyzing..." : "Smart Breakdown 🪄"}
               </button>
 
               {subtasks.length > 0 && (
-                  <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "rgba(0,0,0,0.2)", borderRadius: "8px" }}>
-                      <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.9rem", color: "var(--text-secondary)" }}>Suggested Subtasks:</h4>
-                      {subtasks.map((st, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem", gap: "0.5rem" }}>
-                              <input 
-                                  type="checkbox" 
-                                  checked={st.selected} 
-                                  onChange={(e) => {
-                                      const updated = [...subtasks];
-                                      updated[i].selected = e.target.checked;
-                                      setSubtasks(updated);
-                                  }}
-                              />
-                              <div style={{ fontSize: "0.85rem", flex: 1 }}>
-                                  <strong>{st.title}</strong> <span style={{color: "var(--text-secondary)"}}>({st.duration})</span>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
+                <div
+                  style={{
+                    marginBottom: "1.5rem",
+                    padding: "1rem",
+                    background: "rgba(0,0,0,0.2)",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: "0 0 0.5rem 0",
+                      fontSize: "0.9rem",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    Suggested Subtasks:
+                  </h4>
+                  {subtasks.map((st, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        marginBottom: "0.5rem",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={st.selected}
+                        onChange={(e) => {
+                          const updated = [...subtasks];
+                          updated[i].selected = e.target.checked;
+                          setSubtasks(updated);
+                        }}
+                      />
+                      <div style={{ fontSize: "0.85rem", flex: 1 }}>
+                        <strong>{st.title}</strong>{" "}
+                        <span style={{ color: "var(--text-secondary)" }}>
+                          ({st.duration})
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
 
-            <button
-              type="submit"
-              className="btn-primary"
-              style={{ width: "100%" }}
-            >
-              Add Task
-            </button>
-          </form>
-        </div>
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{ width: "100%" }}
+              >
+                Add Task
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Task List */}

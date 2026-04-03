@@ -4,6 +4,10 @@ import axios from "axios";
 // Enable credentials globally for all axios requests (for cookie handling)
 axios.defaults.withCredentials = true;
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -21,7 +25,7 @@ export const AuthProvider = ({ children }) => {
             },
           };
           const { data } = await axios.get(
-            "http://localhost:5000/api/users/me",
+            `${API_BASE_URL}/api/users/me`,
             config,
           );
           setUser(data);
@@ -35,7 +39,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await axios.post("http://localhost:5000/api/users/login", {
+    const { data } = await axios.post(`${API_BASE_URL}/api/users/login`, {
       email,
       password,
     });
@@ -45,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     // Just sends OTP now, no token returned
-    await axios.post("http://localhost:5000/api/users", {
+    await axios.post(`${API_BASE_URL}/api/users`, {
       name,
       email,
       password,
@@ -53,18 +57,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   const verifyOtp = async (email, otp) => {
-    const { data } = await axios.post(
-      "http://localhost:5000/api/users/verify-otp",
-      { email, otp },
-    );
+    const { data } = await axios.post(`${API_BASE_URL}/api/users/verify-otp`, {
+      email,
+      otp,
+    });
     localStorage.setItem("token", data.token);
     setUser(data);
   };
 
   const googleSignIn = async (token) => {
     const { data } = await axios.post(
-      "http://localhost:5000/api/users/google-login",
-      { token },
+      `${API_BASE_URL}/api/users/google-login`,
+      {
+        token,
+      },
     );
     localStorage.setItem("token", data.token);
     setUser(data);
@@ -72,7 +78,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post("http://localhost:5000/api/users/logout");
+      await axios.post(`${API_BASE_URL}/api/users/logout`);
     } catch (e) {
       console.warn("logout request failed", e);
     }

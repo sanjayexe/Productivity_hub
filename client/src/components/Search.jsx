@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
 const Search = ({ onClose }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
@@ -12,7 +16,7 @@ const Search = ({ onClose }) => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       };
       const { data } = await axios.get(
-        `http://localhost:5000/api/search?q=${encodeURIComponent(query)}`,
+        `${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}`,
         config,
       );
       setResults(data);

@@ -3,6 +3,10 @@ import axios from "axios";
 import AuthContext from "../context/AuthContext";
 import { Link } from "react-router-dom";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [stats, setStats] = useState({
@@ -16,7 +20,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchQuote = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5000/api/quote");
+        const { data } = await axios.get(`${API_BASE_URL}/api/quote`);
         setQuote(data);
       } catch (error) {
         console.error("Error fetching quote:", error);
@@ -33,18 +37,12 @@ const Dashboard = () => {
         };
 
         // Fetch Tasks
-        const tasksRes = await axios.get(
-          "http://localhost:5000/api/tasks",
-          config,
-        );
+        const tasksRes = await axios.get(`${API_BASE_URL}/api/tasks`, config);
         const pending = tasksRes.data.filter((t) => t.status !== "completed");
         setPendingTasksList(pending.slice(0, 5)); // Top 5
 
         // Fetch Events
-        const eventsRes = await axios.get(
-          "http://localhost:5000/api/events",
-          config,
-        );
+        const eventsRes = await axios.get(`${API_BASE_URL}/api/events`, config);
         const now = new Date();
         const upcoming = eventsRes.data
           .filter((e) => new Date(e.start) >= now)
