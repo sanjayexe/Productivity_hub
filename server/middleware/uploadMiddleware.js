@@ -7,7 +7,7 @@ const storage = multer.memoryStorage();
 // Check file type
 function checkFileType(file, cb) {
   // Allowed ext
-  const filetypes = /jpeg|jpg|png|gif/;
+  const filetypes = /jpeg|jpg|png|gif|webp|heic|heif/;
   // Check ext
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
   // Check mime
@@ -16,7 +16,7 @@ function checkFileType(file, cb) {
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb("Error: Images Only!");
+    cb(new Error("Invalid image format. Use jpg, jpeg, png, gif, webp, heic, or heif."));
   }
 }
 

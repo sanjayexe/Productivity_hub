@@ -78,6 +78,20 @@ app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/search", searchRoutes);
 app.use("/api/quote", quoteRoutes);
 
+// Convert middleware/runtime errors (including multer) into JSON responses.
+app.use((err, req, res, next) => {
+  if (!err) return next();
+
+  if (err.name === "MulterError") {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: "Image too large. Max size is 5MB." });
+    }
+    return res.status(400).json({ message: err.message || "Image upload failed." });
+  }
+
+  return res.status(500).json({ message: err.message || "Server error" });
+});
+
 // Scheduler
 const initScheduler = require("./utils/scheduler");
 
