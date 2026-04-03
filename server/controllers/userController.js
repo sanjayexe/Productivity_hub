@@ -205,19 +205,9 @@ const googleLogin = async (req, res) => {
         user.googleId = googleId;
         user.isVerified = true;
       }
-      if (user.picturePublicId) {
-        try {
-          await cloudinary.uploader.destroy(user.picturePublicId);
-        } catch (error) {
-          console.warn(
-            "Failed to delete previous Cloudinary image:",
-            error.message,
-          );
-        }
-        user.picturePublicId = "";
-      }
-      // Always update picture if it comes from Google
-      if (picture) {
+      // Preserve the user's custom uploaded picture when they already have one.
+      // Only use the Google avatar for accounts that don't have a stored image yet.
+      if (!user.picture && picture) {
         user.picture = picture;
       }
       await user.save();
