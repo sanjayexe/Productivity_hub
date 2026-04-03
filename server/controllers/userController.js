@@ -1,6 +1,10 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const {
+  cloudinary,
+  uploadBufferToCloudinary,
+} = require("../services/cloudinary");
 
 // Generate JWT
 // Generate access JWT
@@ -201,6 +205,17 @@ const googleLogin = async (req, res) => {
         user.googleId = googleId;
         user.isVerified = true;
       }
+      if (user.picturePublicId) {
+        try {
+          await cloudinary.uploader.destroy(user.picturePublicId);
+        } catch (error) {
+          console.warn(
+            "Failed to delete previous Cloudinary image:",
+            error.message,
+          );
+        }
+        user.picturePublicId = "";
+      }
       // Always update picture if it comes from Google
       if (picture) {
         user.picture = picture;
@@ -237,8 +252,6 @@ const googleLogin = async (req, res) => {
     res.status(400).json({ message: error.message || "Google Login Failed" });
   }
 };
-
-
 
 // @desc    Get user data
 // @route   GET /api/users/me
@@ -332,7 +345,24 @@ const updateUserProfile = async (req, res) => {
       user.password = await bcrypt.hash(req.body.password, salt);
     }
     if (req.file) {
-      user.picture = `http://localhost:5000/uploads/${req.file.filename}`;
+      if (user.picturePublicId) {
+        try {
+          await cloudinary.uploader.destroy(user.picturePublicId);
+        } catch (error) {
+          console.warn(
+            "Failed to delete previous Cloudinary image:",
+            error.message,
+          );
+        }
+      }
+
+      const uploadResult = await uploadBufferToCloudinary(req.file.buffer, {
+        folder: process.env.CLOUDINARY_FOLDER || "productivity-hub/profiles",
+        resource_type: "image",
+      });
+
+      user.picture = uploadResult.secure_url;
+      user.picturePublicId = uploadResult.public_id;
     }
 
     const updatedUser = await user.save();

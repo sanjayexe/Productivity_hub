@@ -32,6 +32,10 @@ const userSchema = mongoose.Schema(
       type: String,
       default: "",
     },
+    picturePublicId: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,
