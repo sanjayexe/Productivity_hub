@@ -7,6 +7,8 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:5000"
 ).replace(/\/$/, "");
 
+const DASHBOARD_QUOTE_CACHE_KEY = "dashboardQuoteCache";
+
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [stats, setStats] = useState({
@@ -19,9 +21,31 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchQuote = async () => {
+      const cachedQuote = sessionStorage.getItem(DASHBOARD_QUOTE_CACHE_KEY);
+
+      if (cachedQuote) {
+        try {
+          const parsedQuote = JSON.parse(cachedQuote);
+          if (parsedQuote.source === "api") {
+            setQuote(parsedQuote);
+            return;
+          }
+
+          sessionStorage.removeItem(DASHBOARD_QUOTE_CACHE_KEY);
+        } catch (error) {
+          sessionStorage.removeItem(DASHBOARD_QUOTE_CACHE_KEY);
+        }
+      }
+
       try {
         const { data } = await axios.get(`${API_BASE_URL}/api/quote`);
         setQuote(data);
+        if (data.source === "api") {
+          sessionStorage.setItem(
+            DASHBOARD_QUOTE_CACHE_KEY,
+            JSON.stringify(data),
+          );
+        }
       } catch (error) {
         console.error("Error fetching quote:", error);
       }

@@ -328,11 +328,16 @@ const resendOTP = async (req, res) => {
 // @route   PUT /api/users/profile
 // @access  Private
 const updateUserProfile = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id);
 
-  if (user) {
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
+
     if (req.body.password) {
       // Validate password strength
       if (!PASSWORD_REGEX.test(req.body.password)) {
@@ -344,7 +349,22 @@ const updateUserProfile = async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(req.body.password, salt);
     }
+
     if (req.file) {
+      if (
+        !process.env.CLOUDINARY_CLOUD_NAME ||
+        !process.env.CLOUDINARY_API_KEY ||
+        !process.env.CLOUDINARY_API_SECRET
+      ) {
+        return res.status(500).json({
+          message: "Cloudinary is not configured on server",
+        });
+      }
+
+      if (!req.file.buffer) {
+        return res.status(400).json({ message: "Invalid image upload" });
+      }
+
       if (user.picturePublicId) {
         try {
           await cloudinary.uploader.destroy(user.picturePublicId);
@@ -366,16 +386,20 @@ const updateUserProfile = async (req, res) => {
     }
 
     const updatedUser = await user.save();
+    const accessToken = generateAccessToken(updatedUser._id);
 
-    res.json({
+    return res.json({
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
       picture: updatedUser.picture,
+      token: accessToken,
     });
-  } else {
-    res.status(404);
-    throw new Error("User not found");
+  } catch (error) {
+    console.error("Update profile error:", error.message);
+    return res
+      .status(500)
+      .json({ message: "Failed to update profile. Please try again." });
   }
 };
 

@@ -9,7 +9,7 @@
   --border-color: #334155;
   --radius: 12px;
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family: "Inter", system-ui, -apple-system, sans-serif;
   --transition: all 0.3s ease;
 }
 
@@ -28,7 +28,12 @@ body {
   min-height: 100vh;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   color: var(--text-primary);
   margin-top: 0;
 }
@@ -42,7 +47,11 @@ button {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--secondary-color)
+  );
   color: white;
   padding: 0.75rem 1.5rem;
   font-weight: 600;
@@ -69,7 +78,9 @@ button {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   background-color: #334155;
   border: 1px solid var(--border-color);
   color: var(--text-primary);
@@ -81,7 +92,8 @@ input, textarea, select {
   transition: var(--transition);
 }
 
-input:focus, textarea:focus {
+input:focus,
+textarea:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
@@ -89,8 +101,14 @@ input:focus, textarea:focus {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
@@ -117,4 +135,69 @@ input:focus, textarea:focus {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Responsive layout */
+@media (max-width: 1024px) {
+  .tasks-layout,
+  .planner-layout,
+  .calendar-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1rem !important;
+  }
+
+  .app-nav {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem;
+  }
+
+  .app-nav-links {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 0.25rem;
+  }
+
+  .app-nav-user {
+    justify-content: space-between;
+  }
+
+  .calendar-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+
+  .calendar-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .calendar-board {
+    overflow-x: auto;
+  }
+
+  .calendar-weekdays,
+  .calendar-days-grid {
+    min-width: 560px;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-nav-user span {
+    display: none;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
 }

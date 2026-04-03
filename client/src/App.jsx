@@ -52,6 +52,7 @@ const Navigation = () => {
 
   return (
     <nav
+      className="app-nav"
       style={{
         marginBottom: "2rem",
         display: "flex",
@@ -63,7 +64,10 @@ const Navigation = () => {
         border: "1px solid var(--border-color)",
       }}
     >
-      <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+      <div
+        className="app-nav-links"
+        style={{ display: "flex", gap: "1rem", alignItems: "center" }}
+      >
         <Link
           to="/"
           style={{ fontWeight: "bold", fontSize: "1.2rem", ...linkStyle }}
@@ -150,7 +154,10 @@ const Navigation = () => {
           🔔
         </Link>
       </div>
-      <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+      <div
+        className="app-nav-user"
+        style={{ display: "flex", gap: "1rem", alignItems: "center" }}
+      >
         <Link
           to="/profile"
           style={{

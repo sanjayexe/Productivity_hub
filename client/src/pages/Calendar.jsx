@@ -124,6 +124,7 @@ const CalendarPage = () => {
   return (
     <div className="animate-fade-in">
       <div
+        className="calendar-header"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -132,7 +133,10 @@ const CalendarPage = () => {
         }}
       >
         <h1>Calendar</h1>
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+        <div
+          className="calendar-controls"
+          style={{ display: "flex", gap: "1rem", alignItems: "center" }}
+        >
           <button
             onClick={prevMonth}
             className="btn-primary"
@@ -154,11 +158,13 @@ const CalendarPage = () => {
       </div>
 
       <div
+        className="calendar-layout"
         style={{ display: "grid", gridTemplateColumns: "3fr 1fr", gap: "2rem" }}
       >
         {/* Visual Calendar */}
-        <div className="card" style={{ padding: "1rem" }}>
+        <div className="card calendar-board" style={{ padding: "1rem" }}>
           <div
+            className="calendar-weekdays"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(7, 1fr)",
@@ -177,6 +183,7 @@ const CalendarPage = () => {
             <div>Sat</div>
           </div>
           <div
+            className="calendar-days-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(7, 1fr)",
@@ -269,7 +276,10 @@ const CalendarPage = () => {
         </div>
 
         {/* Side Panel: Selected Date & Add Event */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div
+          className="calendar-side"
+          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+        >
           <div className="card">
             <h3 style={{ marginTop: 0 }}>{selectedDate.toDateString()}</h3>
             <div
