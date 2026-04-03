@@ -5,6 +5,7 @@ import AuthContext from "../context/AuthContext";
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:5000"
 ).replace(/\/$/, "");
+const USER_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -82,6 +83,7 @@ const Tasks = () => {
           priority,
           dueDate: dueDateISO,
           status: "pending",
+          timezone: USER_TIME_ZONE,
         },
         config,
       );
@@ -98,6 +100,7 @@ const Tasks = () => {
             priority: st.priority,
             dueDate: dueDateISO,
             status: "pending",
+            timezone: USER_TIME_ZONE,
           },
           config,
         );
